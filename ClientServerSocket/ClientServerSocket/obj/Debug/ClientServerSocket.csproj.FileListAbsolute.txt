@@ -1,0 +1,6 @@
+C:\Users\Khyteang\source\repos\ClientServerSocket\ClientServerSocket\obj\Debug\ClientServerSocket.csproj.CoreCompileInputs.cache
+C:\Users\Khyteang\source\repos\ClientServerSocket\ClientServerSocket\bin\Debug\ClientServerSocket.exe.config
+C:\Users\Khyteang\source\repos\ClientServerSocket\ClientServerSocket\bin\Debug\ClientServerSocket.exe
+C:\Users\Khyteang\source\repos\ClientServerSocket\ClientServerSocket\bin\Debug\ClientServerSocket.pdb
+C:\Users\Khyteang\source\repos\ClientServerSocket\ClientServerSocket\obj\Debug\ClientServerSocket.exe
+C:\Users\Khyteang\source\repos\ClientServerSocket\ClientServerSocket\obj\Debug\ClientServerSocket.pdb

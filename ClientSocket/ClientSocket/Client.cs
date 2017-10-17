@@ -20,37 +20,87 @@ namespace ClientSocket
 			var method = args[METHOD];
 			var filename = args[FILENAME];
 
-			Console.Title = "Client";
 			ConnectServer(serverIP, serverPort);
 			SendRequest(serverIP, method.ToUpper(), filename);
 			Console.ReadLine();
 		}
 
-		private static void SendRequest(string serverIP, string method, string filename)
+		/**
+		* Create request with the following method and filename  
+		**/
+		private static string CreateRequest(string serverIP, string method, string filename)
 		{
-			//"127.0.0.1"
-			var request = $"{method} / HTTP/1.1\r\n" +
-				$"Host: {serverIP}\r\n" +
-				"Connection: keep-alive\r\n" +
-				"Accept: text/html\r\n" +
-				"User-Agent: CSharpTests\r\n\r\n";
-			//var request = $"{method},{filename}";
-			_clientSocket.Send(Encoding.ASCII.GetBytes(request));
+			var request = $"{method} /{filename} HTTP/1.0\r\n" +
+					$"Host: {serverIP}\r\n" +
+					"Connection: keep-alive\r\n" +
+					"Accept: text/html\r\n" +
+					"User-Agent: CSharpTests\r\n\r\n";
 
-			byte[] receivedBuf = new byte[50240];
-			var blob = _clientSocket.Receive(receivedBuf);
-			string text = Encoding.ASCII.GetString(receivedBuf);
-			var path = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
-			Console.WriteLine(text);
-			File.WriteAllText(path+'/'+filename, text);
-			/*
-			while(true)
+			//if method is a PUT, read in the file and send in the body of the request
+			if (method == "PUT")
 			{
-				_clientSocket.RemoteEndPoint
+				var path = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
+				var textFromFile = File.ReadAllText(path + "/" +filename).Replace("\0", string.Empty);
+				request += $"Body: {textFromFile}\r\n";
 			}
-			*/
+
+			return request;
 		}
 
+		/**
+		 * Build request and receive response
+		 **/
+		private static void SendRequest(string serverIP, string method, string filename)
+		{
+			var request = CreateRequest(serverIP, method, filename);
+			_clientSocket.Send(Encoding.ASCII.GetBytes(request));
+
+			var receivedBuf = new byte[2048];
+			_clientSocket.Receive(receivedBuf);
+			var respString = Encoding.ASCII.GetString(receivedBuf);
+			HandleResponse(respString, method, filename);
+		}
+
+		/**
+		 * Once we get a respone from server, handle it properly
+		 **/
+		private static void HandleResponse(string response, string method, string filename)
+		{
+			var respArray = response.Split(
+						new[] { "\r\n", "\r", "\n" },
+						StringSplitOptions.None
+					);
+
+			var statusCode = respArray[0].Split(' ')[1];
+
+			if (statusCode == "200" && method == "GET")
+			{
+				Console.WriteLine(response);
+				var path = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
+				var body = respArray[5].Substring(5).Replace("\0", string.Empty);
+				File.WriteAllText(path + '/' + filename, body);
+			}
+			else if (statusCode == "401" && method == "GET")
+			{
+				Console.WriteLine($"Server cannot find file name {filename}");
+			}
+			else if (statusCode == "200" && method == "PUT")
+			{
+				Console.WriteLine($"Server successfully write filename {filename}");
+			}
+			else if (statusCode == "401" && method == "PUT")
+			{
+				Console.WriteLine($"Server failed to save filename {filename}");
+			}
+			else
+			{
+				Console.WriteLine("Server did not response with an acceptable status code");
+			}
+		}
+
+		/**
+		 * Connecting to server
+		 **/
 		private static void ConnectServer(string serverIP, int port)
 		{
 			while (!_clientSocket.Connected)
